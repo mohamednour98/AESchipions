@@ -1,6 +1,6 @@
 module SubBox(
-  input wire beforeSub,
-  output wire afterSub
+  input wire[31:0] beforeSub,
+  output wire[31:0] afterSub
 );
 
   wire[7:0] sBox[0:255];

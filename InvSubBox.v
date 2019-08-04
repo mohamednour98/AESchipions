@@ -1,6 +1,6 @@
 module InvSubBox(
-  beforeSub[31:0],
-  afterSub[31:0]
+  input wire[31:0] beforeSub,
+  output wire[31:0] afterSub
 );
 
   wire [7:0] invBox[0:255];

@@ -26,7 +26,7 @@ module EncryptionBlock(
   localparam ctrlIdle = 2'h0;
   localparam ctrlInit = 2'h1;
   localparam ctrlSBox = 2'h2;
-  localparam ctrlMain = 2'3;
+  localparam ctrlMain = 2'h3;
 
   //functions for mixing columns and shifting rows
 
@@ -189,7 +189,7 @@ module EncryptionBlock(
 
   //updateType FSM
 
-  always@(*) begin
+  always@(*) begin :updateTypeFSM
 
     reg[127:0] oldBlock, shiftRowsBlock, mixColumnsBlock;
     reg[127:0] addKeyInitBlock, addKeyMainBlock, addKeyFinalBlock;
