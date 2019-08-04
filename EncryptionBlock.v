@@ -170,11 +170,11 @@ module EncryptionBlock(
       if(block0WE)
         block0Reg <= blockNew[127:096];
       if(block1WE)
-        block0Reg <= blockNew[095:064];
+        block1Reg <= blockNew[095:064];
       if(block2WE)
-        block0Reg <= blockNew[063:032];
+        block2Reg <= blockNew[063:032];
       if(block3WE)
-        block0Reg <= blockNew[031:000];
+        block3Reg <= blockNew[031:000];
       
       if(sWordCtrWE)
         sWordCtrReg <= sWordCtrNew;
@@ -206,7 +206,7 @@ module EncryptionBlock(
     mixColumnsBlock = mixColumns(shiftRowsBlock);
     addKeyInitBlock = addRoundKey(block, roundKey);
     addKeyMainBlock = addRoundKey(mixColumnsBlock, roundKey);
-    addKeyMainBlock = addRoundKey(shiftRowsBlock, roundKey);
+    addKeyFinalBlock = addRoundKey(shiftRowsBlock, roundKey);
 
     case(updateType)
       initUpdate: begin
@@ -259,6 +259,20 @@ module EncryptionBlock(
     endcase
   end
 
+  always@(*) begin
+    sWordCtrNew = 2'h0;
+    sWordCtrWE = 1'b0;
+
+    if(sWordCtrReset) begin
+      sWordCtrNew = 2'h0;
+      sWordCtrWE = 1'b1;
+    end
+    else if(sWordCtrInc) begin
+      sWordCtrNew = sWordCtrReg + 1'b1;
+      sWordCtrWE = 1'b1;
+    end
+  end
+
   //round counter control
 
   always@(*) begin
@@ -308,6 +322,15 @@ module EncryptionBlock(
         updateType = initUpdate;
         ctrlNew = ctrlSBox;
         ctrlWE = 1'b1;
+      end
+
+      ctrlSBox: begin
+        sWordCtrInc = 1'b1;
+        updateType = sBoxUpdate;
+        if(sWordCtrReg == 2'h3) begin
+          ctrlNew = ctrlMain;
+          ctrlWE = 1'b1;
+        end
       end
 
       ctrlMain: begin

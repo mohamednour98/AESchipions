@@ -50,8 +50,8 @@ module tb_aes_encipher_block();
   parameter CLK_HALF_PERIOD = 1;
   parameter CLK_PERIOD = 2 * CLK_HALF_PERIOD;
 
-  parameter AES_128_BIT_KEY = 1;
-  parameter AES_256_BIT_KEY = 0;
+  parameter AES_128_BIT_KEY = 0;
+  parameter AES_256_BIT_KEY = 1;
 
   parameter AES_DECIPHER = 1'b0;
   parameter AES_ENCIPHER = 1'b1;
@@ -330,12 +330,12 @@ module tb_aes_encipher_block();
       reg [127 : 0] nist_ecb_128_enc_expected1;
       reg [127 : 0] nist_ecb_128_enc_expected2;
       reg [127 : 0] nist_ecb_128_enc_expected3;
-
+/*
       reg [127 : 0] nist_ecb_256_enc_expected0;
       reg [127 : 0] nist_ecb_256_enc_expected1;
       reg [127 : 0] nist_ecb_256_enc_expected2;
       reg [127 : 0] nist_ecb_256_enc_expected3;
-
+*/
       nist_plaintext0 = 128'h6bc1bee22e409f96e93d7e117393172a;
       nist_plaintext1 = 128'hae2d8a571e03ac9c9eb76fac45af8e51;
       nist_plaintext2 = 128'h30c81c46a35ce411e5fbc1191a0a52ef;
@@ -345,12 +345,12 @@ module tb_aes_encipher_block();
       nist_ecb_128_enc_expected1 = 128'hf5d3d58503b9699de785895a96fdbaaf;
       nist_ecb_128_enc_expected2 = 128'h43b1cd7f598ece23881b00e3ed030688;
       nist_ecb_128_enc_expected3 = 128'h7b0c785e27e8ad3f8223207104725dd4;
-
+/*
       nist_ecb_256_enc_expected0 = 255'hf3eed1bdb5d2a03c064b5a7e3db181f8;
       nist_ecb_256_enc_expected1 = 255'h591ccb10d410ed26dc5ba74a31362870;
       nist_ecb_256_enc_expected2 = 255'hb6ed21b99ca6f4f9f153e7b1beafed1d;
       nist_ecb_256_enc_expected3 = 255'h23304b7a39f9f3ff067d8d8f9e24ecc7;
-
+*/
 
       $display("   -= Testbench for aes encipher block started =-");
       $display("     ============================================");
@@ -384,7 +384,7 @@ module tb_aes_encipher_block();
       test_ecb_enc(AES_128_BIT_KEY, nist_plaintext2, nist_ecb_128_enc_expected2);
       test_ecb_enc(AES_128_BIT_KEY, nist_plaintext3, nist_ecb_128_enc_expected3);
 
-
+/*
       // NIST 256 bit ECB tests.
       key_mem[00] = 128'h603deb1015ca71be2b73aef0857d7781;
       key_mem[01] = 128'h1f352c073b6108d72d9810a30914dff4;
@@ -406,7 +406,7 @@ module tb_aes_encipher_block();
       test_ecb_enc(AES_256_BIT_KEY, nist_plaintext1, nist_ecb_256_enc_expected1);
       test_ecb_enc(AES_256_BIT_KEY, nist_plaintext2, nist_ecb_256_enc_expected2);
       test_ecb_enc(AES_256_BIT_KEY, nist_plaintext3, nist_ecb_256_enc_expected3);
-
+*/
 
       display_test_result();
       $display("");
