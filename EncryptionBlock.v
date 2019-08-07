@@ -259,6 +259,8 @@ module EncryptionBlock(
     endcase
   end
 
+  //sub-word counter control
+
   always@(*) begin
     sWordCtrNew = 2'h0;
     sWordCtrWE = 1'b0;

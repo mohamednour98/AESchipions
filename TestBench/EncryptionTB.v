@@ -159,28 +159,28 @@ module tb_aes_encipher_block();
       $display("ready = 0x%01x, next = 0x%01x",
                dut.ready, dut.next);
       $display("block     = 0x%032x", dut.block);
-      $display("new_block = 0x%032x", dut.newBlock);
+      $display("newBlock = 0x%032x", dut.newBlock);
       $display("");
 
       $display("Control states");
       $display("round = 0x%01x", dut.round);
-      $display("enc_ctrl = 0x%01x, update_type = 0x%01x, sword_ctr = 0x%01x, round_ctr = 0x%01x",
+      $display("ctrl = 0x%01x, updateType = 0x%01x, sWordCtr = 0x%01x, roundCtr = 0x%01x",
                dut.ctrlReg, dut.updateType, dut.sWordCtrReg, dut.roundCtrReg);
       $display("");
 
       $display("Internal data values");
-      $display("round_key = 0x%016x", dut.roundKey);
-      $display("sboxw = 0x%08x, new_sboxw = 0x%08x", dut.beforeSub, dut.afterSub);
-      $display("block_w0_reg = 0x%08x, block_w1_reg = 0x%08x, block_w2_reg = 0x%08x, block_w3_reg = 0x%08x",
+      $display("roundKey = 0x%016x", dut.roundKey);
+      $display("beforeSub = 0x%08x, afterSub = 0x%08x", dut.beforeSub, dut.afterSub);
+      $display("block0 = 0x%08x, block1 = 0x%08x, block2 = 0x%08x, block3 = 0x%08x",
                dut.block0Reg, dut.block1Reg, dut.block2Reg, dut.block3Reg);
       $display("");
-      $display("old_block          = 0x%08x", dut.updateTypeFSM.oldBlock);
-      $display("shiftrows_block    = 0x%08x", dut.updateTypeFSM.shiftRowsBlock);
-      $display("mixcolumns_block   = 0x%08x", dut.updateTypeFSM.mixColumnsBlock);
-      $display("addkey_init_block  = 0x%08x", dut.updateTypeFSM.addKeyInitBlock);
-      $display("addkey_main_block  = 0x%08x", dut.updateTypeFSM.addKeyMainBlock);
-      $display("addkey_final_block = 0x%08x", dut.updateTypeFSM.addKeyFinalBlock);
-      $display("block_w0_new = 0x%08x, block_w1_new = 0x%08x, block_w2_new = 0x%08x, block_w3_new = 0x%08x",
+      $display("oldBlock          = 0x%08x", dut.updateTypeFSM.oldBlock);
+      $display("shiftRowsBlock    = 0x%08x", dut.updateTypeFSM.shiftRowsBlock);
+      $display("mixColumnsBlock   = 0x%08x", dut.updateTypeFSM.mixColumnsBlock);
+      $display("addKeyInitBlock  = 0x%08x", dut.updateTypeFSM.addKeyInitBlock);
+      $display("addKeyMainBlock  = 0x%08x", dut.updateTypeFSM.addKeyMainBlock);
+      $display("addKeyFinalBlock = 0x%08x", dut.updateTypeFSM.addKeyFinalBlock);
+      $display("block0New = 0x%08x, block1New = 0x%08x, block2New = 0x%08x, block3New = 0x%08x",
                dut.blockNew[127 : 096], dut.blockNew[095 : 064],
                dut.blockNew[063 : 032], dut.blockNew[031 : 000]);
       $display("");
