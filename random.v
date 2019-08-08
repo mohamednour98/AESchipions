@@ -1,21 +1,22 @@
-
 module nonce(
-input clk,
-input reset,
-  input [63:0]counter,
+  input  clk,
+  input  reset,
+  input ready,
   output[63:0] outData
 );
 
-  reg[63:0] data;
-  assign outData = data[63:0];
-always@(posedge clk)
-begin 
-if(!reset)
-begin 
-data<={8{8'haa}}^counter;
-end
-else 
-data<=data;
-end 
-assign outData = data[63:0];
+  reg[63:0] data, dataNew;
+  assign outData = dataNew;
+  wire feedback = data[63] ^ data[9] ^ data[7] ^ data[5] ^ data[3] ^ data[0];
+
+  always @(posedge clk or negedge reset) begin
+    if (~reset) 
+      data = {16{4'hf}};
+    else begin
+      data = {data[62:0], feedback};
+      if(ready)
+        dataNew = data;
+    end
+  end
+
 endmodule
