@@ -23,7 +23,7 @@ module keyGen(
 
   reg [127 : 0] prevKeyReg;
   reg [127 : 0] prevKeyNew;
-  reg           prevKey;
+  reg           prevKeyWE;
 
   reg [3 : 0] roundCtrReg;
   reg [3 : 0] roundCtrNew;
@@ -83,7 +83,7 @@ module keyGen(
           if (keyMemWE)
             keyMem[roundCtrReg] <= keyMemNew;
 
-          if (prevKey)
+          if (prevKeyWE)
             prevKeyReg <= prevKeyNew;
 
           if (CtrlWE)
@@ -97,7 +97,7 @@ module keyGen(
   end 
 
   always @* begin: round_key_gen
-    reg [31 : 0] w0, w1, w2, w3, w4, w5, w6, w7;
+    reg [31 : 0] w0, w1, w2, w3;
     reg [31 : 0] k0, k1, k2, k3;
     reg [31 : 0] rconw, rotstw, tw, trw;
 
@@ -105,7 +105,7 @@ module keyGen(
     keyMemNew   = 128'h0;
     keyMemWE    = 1'b0;
     prevKeyNew = 128'h0;
-    prevKey  = 1'b0;
+    prevKeyWE  = 1'b0;
 
     k0 = 32'h0;
     k1 = 32'h0;
@@ -117,13 +117,13 @@ module keyGen(
 
     // Extract words and calculate intermediate values.
     // Perform rotation of sbox word etc.
-    w4 = prevKeyReg[127 : 096];
-    w5 = prevKeyReg[095 : 064];
-    w6 = prevKeyReg[063 : 032];
-    w7 = prevKeyReg[031 : 000];
+    w0 = prevKeyReg[127 : 096];
+    w1 = prevKeyReg[095 : 064];
+    w2 = prevKeyReg[063 : 032];
+    w3 = prevKeyReg[031 : 000];
 
     rconw = {rConReg, 24'h0};
-    tempBeforeSub = w7;
+    tempBeforeSub = w3;
     rotstw = {afterSub[23 : 00], afterSub[31 : 24]};
     trw = rotstw ^ rconw;
     tw = afterSub;
@@ -138,18 +138,18 @@ module keyGen(
         begin
           keyMemNew   = key[127 : 0];
           prevKeyNew = key[127 : 0];
-          prevKey  = 1'b1;
+          prevKeyWE  = 1'b1;
           rConNext     = 1'b1;
         end
       else
         begin
-          k0 = w4 ^ trw;
-          k1 = w5 ^ w4 ^ trw;
-          k2 = w6 ^ w5 ^ w4 ^ trw;
-          k3 = w7 ^ w6 ^ w5 ^ w4 ^ trw;   
+          k0 = w0 ^ trw;
+          k1 = w1 ^ w0 ^ trw;
+          k2 = w2 ^ w1 ^ w0 ^ trw;
+          k3 = w3 ^ w2 ^ w1 ^ w0 ^ trw;   
           keyMemNew   = {k0, k1, k2, k3};
           prevKeyNew = {k0, k1, k2, k3};
-          prevKey  = 1'b1;
+          prevKeyWE  = 1'b1;
           rConNext     = 1'b1;
         end
 
@@ -201,9 +201,10 @@ module keyGen(
 
   always @*
     begin: key_mem_ctrl
-      reg [3 : 0] numOfRounds = 10;
+      reg [3 : 0] numOfRounds;
 
       // Default assignments.
+      numOfRounds = 4'ha;
       readyNew        = 1'b0;
       readyWE         = 1'b0;
       roundKeyUpdate = 1'b0;
