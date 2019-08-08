@@ -235,7 +235,7 @@ module tb_aes_key_mem();
   // Test 128 bit keys. Due to array problems, the result check
   // is fairly ugly.
   //----------------------------------------------------------------
-  task test_key_128(input [255 : 0] key,
+  task test_key_128(input [127 : 0] key,
                     input [127 : 0] expected00,
                     input [127 : 0] expected01,
                     input [127 : 0] expected02,
