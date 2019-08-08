@@ -9,7 +9,7 @@ module tb_aes_key_mem();
   //----------------------------------------------------------------
   // Internal constant and parameter definitions.
   //----------------------------------------------------------------
-  parameter DEBUG = 1;
+  parameter DEBUG = 0;
   parameter SHOW_SBOX = 0;
 
   parameter CLK_HALF_PERIOD = 1;
@@ -176,7 +176,7 @@ module tb_aes_key_mem();
 
       tb_clk     = 0;
       tb_reset_n = 1;
-      tb_key     = {8{32'h00000000}};
+      tb_key     = {4{32'h00000000}};
       tb_init    = 0;
       tb_round   = 4'h0;
     end
@@ -235,7 +235,7 @@ module tb_aes_key_mem();
   // Test 128 bit keys. Due to array problems, the result check
   // is fairly ugly.
   //----------------------------------------------------------------
-  task test_key_128(input [255 : 0] key,
+  task test_key_128(input [127 : 0] key,
                     input [127 : 0] expected00,
                     input [127 : 0] expected01,
                     input [127 : 0] expected02,
