@@ -1,6 +1,6 @@
-module nonce(
-  input  clk,
-  input  reset,
+module random(
+  input clk,
+  input reset,
   input ready,
   output[63:0] outData
 );
