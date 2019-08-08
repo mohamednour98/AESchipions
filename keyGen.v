@@ -1,5 +1,3 @@
-
-
 module aes_key_mem(
                    input wire            clk,
                    input wire            reset_n,
