@@ -230,7 +230,7 @@ module tb_aes_key_mem();
                     input [127 : 0] expected10
                    );
     begin
-      $display("** Testing with 128-bit key 0x%16x", key[255 : 128]);
+      $display("** Testing with 128-bit key 0x%16x", key[127 : 0]);
       $display("");
 
       tb_key = key;
@@ -282,11 +282,11 @@ module tb_aes_key_mem();
   //----------------------------------------------------------------
   initial
     begin : aes_key_mem_test
-      reg [255 : 0] key128_0;
-      reg [255 : 0] key128_1;
-      reg [255 : 0] key128_2;
-      reg [255 : 0] key128_3;
-      reg [255 : 0] nist_key128;
+      reg [127 : 0] key128_0;
+      reg [127 : 0] key128_1;
+      reg [127 : 0] key128_2;
+      reg [127 : 0] key128_3;
+      reg [127 : 0] nist_key128;
 
       reg [127 : 0] expected_00;
       reg [127 : 0] expected_01;
@@ -316,7 +316,7 @@ module tb_aes_key_mem();
       #(100 *CLK_PERIOD);
 
       // AES-128 test case 1 key and expected values.
-      key128_0    = 256'h0000000000000000000000000000000000000000000000000000000000000000;
+      key128_0    = 256'h00000000000000000000000000000000;
       expected_00 = 128'h00000000000000000000000000000000;
       expected_01 = 128'h62636363626363636263636362636363;
       expected_02 = 128'h9b9898c9f9fbfbaa9b9898c9f9fbfbaa;
@@ -336,7 +336,7 @@ module tb_aes_key_mem();
 
 
       // AES-128 test case 2 key and expected values.
-      key128_1    = 256'hffffffffffffffffffffffffffffffff00000000000000000000000000000000;
+      key128_1    = 256'hffffffffffffffffffffffffffffffff;
       expected_00 = 128'hffffffffffffffffffffffffffffffff;
       expected_01 = 128'he8e9e9e917161616e8e9e9e917161616;
       expected_02 = 128'hadaeae19bab8b80f525151e6454747f0;
@@ -356,7 +356,7 @@ module tb_aes_key_mem();
 
 
       // AES-128 test case 3 key and expected values.
-      key128_2    = 256'h000102030405060708090a0b0c0d0e0f00000000000000000000000000000000;
+      key128_2    = 256'h000102030405060708090a0b0c0d0e0f;
       expected_00 = 128'h000102030405060708090a0b0c0d0e0f;
       expected_01 = 128'hd6aa74fdd2af72fadaa678f1d6ab76fe;
       expected_02 = 128'hb692cf0b643dbdf1be9bc5006830b3fe;
@@ -376,7 +376,7 @@ module tb_aes_key_mem();
 
 
       // AES-128 test case 4 key and expected values.
-      key128_3    = 256'h6920e299a5202a6d656e636869746f2a00000000000000000000000000000000;
+      key128_3    = 256'h6920e299a5202a6d656e636869746f2a;
       expected_00 = 128'h6920e299a5202a6d656e636869746f2a;
       expected_01 = 128'hfa8807605fa82d0d3ac64e6553b2214f;
       expected_02 = 128'hcf75838d90ddae80aa1be0e5f9a9c1aa;
@@ -396,7 +396,7 @@ module tb_aes_key_mem();
 
 
       // NIST AES-128 test case.
-      nist_key128 = 256'h2b7e151628aed2a6abf7158809cf4f3c00000000000000000000000000000000;
+      nist_key128 = 256'h2b7e151628aed2a6abf7158809cf4f3c;
       expected_00 = 128'h2b7e151628aed2a6abf7158809cf4f3c;
       expected_01 = 128'ha0fafe1788542cb123a339392a6c7605;
       expected_02 = 128'hf2c295f27a96b9435935807a7359f67f;
@@ -417,7 +417,7 @@ module tb_aes_key_mem();
 
 /*
       // AES-256 test case 1 key and expected values.
-      key256_0    = 256'h000000000000000000000000000000000000000000000000000000000000000;
+      key256_0    = 256'h00000000000000000000000000000000;
       expected_00 = 128'h00000000000000000000000000000000;
       expected_01 = 128'h00000000000000000000000000000000;
       expected_02 = 128'h62636363626363636263636362636363;
@@ -442,7 +442,7 @@ module tb_aes_key_mem();
 
 
       // AES-256 test case 2 key and expected values.
-      key256_1    = 256'hffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+      key256_1    = 256'hffffffffffffffffffffffffffffffff;
       expected_00 = 128'hffffffffffffffffffffffffffffffff;
       expected_01 = 128'hffffffffffffffffffffffffffffffff;
       expected_02 = 128'he8e9e9e917161616e8e9e9e917161616;
@@ -467,7 +467,7 @@ module tb_aes_key_mem();
 
 
       // AES-256 test case 3 key and expected values.
-      key256_2    = 256'h000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f;
+      key256_2    = 256'h000102030405060708090a0b0c0d0e0f;
       expected_00 = 128'h000102030405060708090a0b0c0d0e0f;
       expected_01 = 128'h101112131415161718191a1b1c1d1e1f;
       expected_02 = 128'ha573c29fa176c498a97fce93a572c09c;
@@ -491,7 +491,7 @@ module tb_aes_key_mem();
                    expected_12, expected_13, expected_14);
 
 
-      nist_key256 = 256'h603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4;
+      nist_key256 = 256'h603deb1015ca71be2b73aef0857d7781;
       expected_00 = 128'h603deb1015ca71be2b73aef0857d7781;
       expected_01 = 128'h1f352c073b6108d72d9810a30914dff4;
       expected_02 = 128'h9ba354118e6925afa51a8b5f2067fcde;
