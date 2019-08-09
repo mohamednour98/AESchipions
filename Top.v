@@ -5,9 +5,9 @@ module Top(
   input reset,
   input[127:0] data,
   input[127:0] key,
-  output encReady,
-  output[127:0] outData,
-  output ready
+  output enc_ready,
+  output[127:0] result,
+  output wire ready
 );
   localparam CTRL_IDLE  = 2'h0;
   localparam CTRL_INIT  = 2'h1;
@@ -26,7 +26,6 @@ module Top(
 
   wire [3 : 0]   enc_round_nr;
   wire [127 : 0] enc_new_block;
-  wire           enc_ready;
   wire [31 : 0]  enc_sboxw;
 
  
@@ -90,10 +89,10 @@ module Top(
     .reset(reset),
     .count(count)
   );
-random fornonce(
-   .reset(reset),
-  .outData(nonce)
-);
+  random fornonce(
+    .reset(reset),
+    .outData(nonce)
+  );
 
   always @*
     begin : sbox_mux
@@ -112,19 +111,19 @@ random fornonce(
     begin: reg_update
       if (!reset)
         begin
-         
           ready_reg         <= 1'b1;
           aes_core_ctrl_reg <= CTRL_IDLE;
         end
       else
         begin
-         
-
           if (ready_we)
             ready_reg <= ready_new;
 
           if (aes_core_ctrl_we)
             aes_core_ctrl_reg <= aes_core_ctrl_new;
+
+          if(enc_ready)
+            muxed_new_block <= data ^ enc_new_block;
         end
     end // reg_update
   always @*
@@ -132,13 +131,11 @@ random fornonce(
       enc_next = 1'b0;
       dec_next = 1'b0;
 
-      
-       
-          // Encipher operations
-          enc_next        = next;
-          muxed_round_nr  = enc_round_nr;
-          muxed_new_block = enc_new_block;
-          muxed_ready     = enc_ready;
+      // Encipher operations
+      enc_next        = next;
+      muxed_round_nr  = enc_round_nr;
+      muxed_new_block = enc_new_block;
+      muxed_ready     = enc_ready;
      
     end // encdec_mux
 

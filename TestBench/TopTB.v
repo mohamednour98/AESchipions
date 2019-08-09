@@ -1,83 +1,93 @@
 module TopTB();
 
+  reg reset, clk, init, next;
+  reg[127:0] key, plainText;
+  wire[127:0] cipherText;
+
+  Top TopInst(
+    .next(next),
+    .clk(clk),
+    .init(init),
+    .reset(reset),
+    .data(plainText),
+    .key(key),
+    .enc_ready(encReady),
+    .result(cipherText),
+    .ready(ready)
+  );
+
   localparam halfPeriod = 1;
   localparam period = 2 * halfPeriod;
-  reg[127:0] PTorCT, key;
-  wire[127:0] outPTorCT;
-  reg clk, startSignal, reset;
+  localparam twicePeriod = 2 * period;
 
-  Top TopModule(
-    .start(startSignal),
-    .clk(clk),
-    .reset(reset),
-    .data(PTorCT),
-    .key(key),
-    .encReady(tbReady),
-    .outData(outPTorCT)
-  );
+  task restart;
+    begin
+      $display("Reseting");
+      reset = 0;
+      #(twicePeriod);
+      reset = 1;
+    end
+  endtask
+
+  task initTest;
+    begin
+      clk = 0;
+      reset = 1;
+      next = 0;
+      key = 0;
+      plainText = 0;
+    end
+  endtask
+
+  task waitReady;
+    begin
+      while(!encReady) begin
+        #(period);
+      end
+    end
+  endtask
+
+  task test(input[127:0] inKey, inText, inExp);
+    begin
+      key = inKey;
+      init = 1;
+      waitReady();
+      $display("Key generation done");
+      plainText = inText;
+      next = 1;
+      #(twicePeriod);
+      next = 0;
+      waitReady();
+      #(period);
+
+      if(cipherText == inExp) begin
+        $display($time);
+        $display("Matching!");
+        $display("result = %032x" ,cipherText);
+      end
+      else begin
+        $display($time);
+        $display("Expected %032x", inExp);
+        $display("Got %032x", cipherText);
+      end
+
+    end
+  endtask
 
   always begin
     #(halfPeriod);
     clk = !clk;
   end
 
-  task testEncryption;
-    begin: testing
-      reg[31:0] PT;
-      reg[31:0] CT;    
+  initial begin: mainBlock
+    reg[127:0] inData, outDataExp, keyToBe;
 
-      PT = 128'h00000000000000000000000000000000;
-      CT = 128'h7df76b0c1ab899b33e42f047b91b546f;
+    keyToBe = 128'h2b7e151628aed2a6abf7158809cf4f3c;
+    inData = 128'h6bc1bee22e409f96e93d7e117393172a;
+    outDataExp = 128'h3b3fd92eb72dad20333449f8e83cfb4a;
 
-      
-      startSignal = 1;
-      PTorCT = PT;
-      // #(period);
-      // startSignal = 0;
-      // #(period);
-
-      waitReady();
-
-      if(PTorCT == outPTorCT)
-        $display("CT == PT");
-      else begin
-        $display($time);
-        $display("CT = %032x", PTorCT);
-        $display("PT = %032x", outPTorCT);
-      end
-    end
-  endtask
-
-  task init;
-    begin
-      clk = 0;
-      startSignal = 0;
-      key = 128'h2b7e151628aed2a6abf7158809cf4f3c;
-    end
-  endtask
-
-  task restart;
-    begin
-      reset = 0;
-      #(period);
-      reset = 1;
-    end
-  endtask
-
-  task waitReady;
-    begin  
-      while(!tbReady)
-        begin
-          //$display("Waiting");
-          #period;
-        end
-    end
-  endtask
-
-  initial begin
-    init();
+    initTest();
     restart();
-    testEncryption();
+    test(keyToBe, inData, outDataExp);
   end
-
 endmodule
