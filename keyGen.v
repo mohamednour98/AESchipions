@@ -2,7 +2,7 @@ module aes_key_mem(
                    input wire            clk,
                    input wire            reset_n,
 
-                   input wire [255 : 0]  key,
+                   input wire [127 : 0]  key,
                   
                    input wire            init,
 
