@@ -1,7 +1,7 @@
 module Counter(
   input clk,
   input reset,
-  input ready,
+ 
   output[63:0] count
 );
 
@@ -12,8 +12,7 @@ module Counter(
     if(~reset) begin
       countReg = 0;
     end
-    else if(ready)
-     countReg = countReg + 1;
+    else countReg = countReg + 1;
   end
 
 endmodule

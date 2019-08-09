@@ -1,22 +1,22 @@
 module random(
-  input clk,
   input reset,
-  input ready,
-  output[63:0] outData
+  
+  output reg [63:0] outData
 );
+  
+  wire feedback;
+wire [63:0]data1;
+ assign data1 = (reset==1) ?{16{4'hf}}:{16{4'ha}} ;
+ assign feedback=data1[63] ^ data1[9] ^ data1[7] ^ data1[5] ^ data1[3] ^ data1[0];
 
-  reg[63:0] data, dataNew;
-  assign outData = dataNew;
-  wire feedback = data[63] ^ data[9] ^ data[7] ^ data[5] ^ data[3] ^ data[0];
+  always @(negedge reset) begin
+ 
+     
+      
+	
+	 outData <= {data1[62:0], feedback};
+   
 
-  always @(posedge clk or negedge reset) begin
-    if (~reset) 
-      data = {16{4'hf}};
-    else begin
-      data = {data[62:0], feedback};
-      if(ready)
-        dataNew = data;
-    end
   end
 
 endmodule

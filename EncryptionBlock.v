@@ -4,8 +4,8 @@ module EncryptionBlock(
   input wire next,
   output wire[3:0] round,
   input wire[127:0] roundKey,
-  output wire[31:0] beforeSub,
-  input wire[31:0] afterSub,
+  output wire[31:0] sboxw,
+  input wire[31:0] new_sboxw,
   input wire[127:0] block,
   output wire[127:0] newBlock,
   output wire ready
@@ -147,7 +147,7 @@ module EncryptionBlock(
   reg[31:0] selSBox;
 
   assign round = roundCtrReg;
-  assign beforeSub = selSBox;
+  assign sboxw = selSBox;
   assign newBlock = {block0Reg, block1Reg, block2Reg, block3Reg};
   assign ready = readyReg;
 
@@ -218,7 +218,7 @@ module EncryptionBlock(
       end
 
       sBoxUpdate: begin
-        blockNew = {afterSub, afterSub, afterSub, afterSub};
+        blockNew = {sboxw, sboxw, sboxw, sboxw};
 
         case(sWordCtrReg)
           2'h0: begin
