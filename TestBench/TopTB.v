@@ -1,284 +1,193 @@
 module TopTB();
 
-  //----------------------------------------------------------------
-  // Internal constant and parameter definitions.
-  //----------------------------------------------------------------
-  parameter DEBUG     = 0;
-  parameter DUMP_WAIT = 0;
-  parameter CLK_HALF_PERIOD = 1;
-  parameter CLK_PERIOD = 2 * CLK_HALF_PERIOD;
+  parameter debug     = 0;
+  parameter dumpWait = 0;
+  parameter halfPeriod = 1;
+  parameter period = 2 * halfPeriod;
 
-  parameter AES_128_BIT_KEY = 0;
+  reg [31 : 0] cycleCTR;
+  reg [31 : 0] errorCTR;
+  reg [31 : 0] tcCTR;
 
-
-
-  parameter AES_ENCIPHER = 1'b1;
-
-
-  //----------------------------------------------------------------
-  // Register and Wire declarations.
-  //----------------------------------------------------------------
-  reg [31 : 0] cycle_ctr;
-  reg [31 : 0] error_ctr;
-  reg [31 : 0] tc_ctr;
-
-  reg            tb_clk;
-  reg            tb_reset_n;
+  reg            tbClk;
+  reg            tbReset;
  
-  reg            tb_init;
-  reg            tb_next;
-  wire           tb_ready;
-  reg [127 : 0]  tb_key;
+  reg            tbInit;
+  reg            tbNext;
+  wire           tbReady;
+  reg [127 : 0]  tbKey;
 
-  reg [127 : 0]  tb_block;
-  wire [127 : 0] tb_result;
+  reg [127 : 0]  tbBlock;
+  wire [127 : 0] tbResult;
  
 
-
-  //----------------------------------------------------------------
-  // Device Under Test.
-  //----------------------------------------------------------------
   Top dut(
-               .clk(tb_clk),
-               .reset(tb_reset_n),
-               .init(tb_init),
-               .next(tb_next),
-               .ready(tb_ready),
-               .key(tb_key),
-               .data(tb_block),
-               .outData(tb_result)
-              );
+      .clk(tbClk),
+      .reset(tbReset),
+      .init(tbInit),
+      .next(tbNext),
+      .ready(tbReady),
+      .key(tbKey),
+      .data(tbBlock),
+      .outData(tbResult)
+    );
 
-
-  //----------------------------------------------------------------
-  // clk_gen
-  //
-  // Always running clock generator process.
-  //----------------------------------------------------------------
   always
-    begin : clk_gen
-      #CLK_HALF_PERIOD;
-      tb_clk = !tb_clk;
-    end // clk_gen
+    begin : clkGen
+      #halfPeriod;
+      tbClk = !tbClk;
+    end
 
-
-  //----------------------------------------------------------------
-  // sys_monitor()
-  //
-  // An always running process that creates a cycle counter and
-  // conditionally displays information about the DUT.
-  //----------------------------------------------------------------
   always
-    begin : sys_monitor
-      cycle_ctr = cycle_ctr + 1;
-      #(CLK_PERIOD);
-      if (DEBUG)
+    begin : sysMonitor
+      cycleCTR = cycleCTR + 1;
+      #(period);
+      if (debug)
         begin
-          dump_dut_state();
+          dutState();
         end
     end
 
-
-  //----------------------------------------------------------------
-  // dump_dut_state()
-  //
-  // Dump the state of the dump when needed.
-  //----------------------------------------------------------------
-  task dump_dut_state;
+  task dutState;
     begin
       $display("State of DUT");
       $display("------------");
       $display("Inputs and outputs:");
     
      
-      $display("block  = 0x%032x", dut.data);
+      $display("block = 0x%032x", dut.data);
       $display("");
-      $display("ready        = 0x%01x", dut.ready);
-      $display(" result = 0x%032x",
-                dut.outData);
+      $display("ready = 0x%01x", dut.ready);
+      $display(" result = 0x%032x", dut.outData);
       $display("");
       $display("Encipher state::");
-      $display("enc_ctrl = 0x%01x, round_ctr = 0x%01x",
-               dut.Encryptor.enc_ctrl_reg, dut.Encryptor.round_ctr_reg);
-      $display("outblock        = 0x%01x", dut.Encryptor.new_block);
+      $display("enc_ctrl = 0x%01x, round_ctr = 0x%01x", dut.encryptor.ctrlReg, dut.encryptor.roundCTRReg);
+      $display("outblock = 0x%01x", dut.encryptor.newBlock);
       $display("");
     end
-  endtask // dump_dut_state
+  endtask
 
-
-  //----------------------------------------------------------------
-  // dump_keys()
-  //
-  // Dump the keys in the key memory of the dut.
-  //----------------------------------------------------------------
-  task dump_keys;
+  task dumpKeys;
     begin
       $display("State of key memory in DUT:");
-      $display("key[00] = 0x%016x", dut.KeyGen.key_mem[00]);
-      $display("key[01] = 0x%016x", dut.KeyGen.key_mem[01]);
-      $display("key[02] = 0x%016x", dut.KeyGen.key_mem[02]);
-      $display("key[03] = 0x%016x", dut.KeyGen.key_mem[03]);
-      $display("key[04] = 0x%016x", dut.KeyGen.key_mem[04]);
-      $display("key[05] = 0x%016x", dut.KeyGen.key_mem[05]);
-      $display("key[06] = 0x%016x", dut.KeyGen.key_mem[06]);
-      $display("key[07] = 0x%016x", dut.KeyGen.key_mem[07]);
-      $display("key[08] = 0x%016x", dut.KeyGen.key_mem[08]);
-      $display("key[09] = 0x%016x", dut.KeyGen.key_mem[09]);
-      $display("key[10] = 0x%016x", dut.KeyGen.key_mem[10]);
+      $display("key[00] = 0x%016x", dut.keyGenInst.keyMemory[00]);
+      $display("key[01] = 0x%016x", dut.keyGenInst.keyMemory[01]);
+      $display("key[02] = 0x%016x", dut.keyGenInst.keyMemory[02]);
+      $display("key[03] = 0x%016x", dut.keyGenInst.keyMemory[03]);
+      $display("key[04] = 0x%016x", dut.keyGenInst.keyMemory[04]);
+      $display("key[05] = 0x%016x", dut.keyGenInst.keyMemory[05]);
+      $display("key[06] = 0x%016x", dut.keyGenInst.keyMemory[06]);
+      $display("key[07] = 0x%016x", dut.keyGenInst.keyMemory[07]);
+      $display("key[08] = 0x%016x", dut.keyGenInst.keyMemory[08]);
+      $display("key[09] = 0x%016x", dut.keyGenInst.keyMemory[09]);
+      $display("key[10] = 0x%016x", dut.keyGenInst.keyMemory[10]);
       $display("");
     end
-  endtask // dump_keys
+  endtask
 
-
-  //----------------------------------------------------------------
-  // reset_dut()
-  //
-  // Toggle reset to put the DUT into a well known state.
-  //----------------------------------------------------------------
-  task reset_dut;
+  task dutReset;
     begin
       $display("*** Toggle reset.");
-      tb_reset_n = 0;
-      #(2 * CLK_PERIOD);
-      tb_reset_n = 1;
+      tbReset = 0;
+      #(2 * period);
+      tbReset = 1;
     end
-  endtask // reset_dut
+  endtask 
 
-
-  //----------------------------------------------------------------
-  // init_sim()
-  //
-  // Initialize all counters and testbed functionality as well
-  // as setting the DUT inputs to defined values.
-  //----------------------------------------------------------------
   task init_sim;
     begin
-      cycle_ctr = 0;
-      error_ctr = 0;
-      tc_ctr    = 0;
+      cycleCTR = 0;
+      errorCTR = 0;
+      tcCTR    = 0;
 
-      tb_clk     = 0;
-      tb_reset_n = 1;
+      tbClk     = 0;
+      tbReset = 1;
   
-      tb_init    = 0;
-      tb_next    = 0;
-      tb_key     = {4{32'h00000000}};
+      tbInit    = 0;
+      tbNext    = 0;
+      tbKey     = {4{32'h00000000}};
      
 
-      tb_block  = {4{32'h00000000}};
+      tbBlock  = {4{32'h00000000}};
     end
-  endtask // init_sim
+  endtask
 
-
-  //----------------------------------------------------------------
-  // display_test_result()
-  //
-  // Display the accumulated test results.
-  //----------------------------------------------------------------
-  task display_test_result;
+  task displayResults;
     begin
-      if (error_ctr == 0)
+      if (errorCTR == 0)
         begin
-          $display("*** All %02d test cases completed successfully", tc_ctr);
+          $display("*** All %02d test cases completed successfully", tcCTR);
         end
       else
         begin
-          $display("*** %02d tests completed - %02d test cases did not complete successfully.",
-                   tc_ctr, error_ctr);
+          $display("*** %02d tests completed - %02d test cases did not complete successfully.", tcCTR, errorCTR);
         end
     end
-  endtask // display_test_result
+  endtask
 
-
-  //----------------------------------------------------------------
-  // wait_ready()
-  //
-  // Wait for the ready flag in the dut to be set.
-  //
-  // Note: It is the callers responsibility to call the function
-  // when the dut is actively processing and will in fact at some
-  // point set the flag.
-  //----------------------------------------------------------------
-  task wait_ready;
+  task waitReady;
     begin
-      while (!tb_ready)
+      while (!tbReady)
         begin
-          #(CLK_PERIOD);
-          if (DUMP_WAIT)
+          #(period);
+          if (dumpWait)
             begin
-              dump_dut_state();
+              dutState();
             end
         end
     end
-  endtask // wait_ready
+  endtask
 
+  task singleBlockTest(
+      input [7 : 0]   tc_number,
+      input [127 : 0] key,
+      input [127 : 0] block,
+      input [127 : 0] expected
+    );
 
-
-
-  //----------------------------------------------------------------
-  // ecb_mode_single_block_test()
-  //
-  // Perform ECB mode encryption or decryption single block test.
-  //----------------------------------------------------------------
-  task ecb_mode_single_block_test(input [7 : 0]   tc_number,
-                                  input [127 : 0] key,
-                                  input [127 : 0] block,
-                                  input [127 : 0] expected);
-   begin
+    begin
      $display("*** TC %0d CTR mode test started.", tc_number);
-     tc_ctr = tc_ctr + 1;
+     tcCTR = tcCTR + 1;
 
-     // Init the cipher with the given key and length.
-     tb_key = key;
-     tb_init = 1;
-     #(2 * CLK_PERIOD);
-     tb_init = 0;
-     wait_ready();
+     tbKey = key;
+     tbInit = 1;
+     #(2 * period);
+     tbInit = 0;
+     waitReady();
 
      $display("Key expansion done");
      $display("");
 
-   //  dump_keys();
+     tbBlock = block;
+     tbNext = 1;
+     #(2 * period);
+     tbNext = 0;
+     waitReady();
 
-
-     // Perform encipher och decipher operation on the block.
-     tb_block = block;
-     tb_next = 1;
-     #(2 * CLK_PERIOD);
-     tb_next = 0;
-     wait_ready();
-
-     if (tb_result == expected)
+     if (tbResult == expected)
        begin
-         $display("*** TC %0d successful.", tc_number);
-	 $display("Key:          0x%032x",dut.key);
-	 $display("Plaintext:    0x%032x", dut.data);
-         $display("Ciphertext:   0x%032x", dut.outData);
-         $display("nonce(iv):    0x%032x", dut.nonceIv);
-         $display("outblock:     0x%032x", dut.Encryptor.new_block);
-        
-         $display("");
+        $display("*** TC %0d successful.", tc_number);
+        $display("Key:          0x%032x",dut.key);
+        $display("Plaintext:    0x%032x", dut.data);
+        $display("Ciphertext:   0x%032x", dut.outData);
+        $display("nonce(iv):    0x%032x", dut.nonceIv);
+        $display("outblock:     0x%032x", dut.encryptor.newBlock);                
+        $display("");
        end
      else
        begin
          $display("*** ERROR: TC %0d NOT successful.", tc_number);
          $display("Expected: 0x%032x", expected);
-         $display("Got:      0x%032x", tb_result);
-         $display("outblock: 0x%01x", dut.Encryptor.new_block);
-         $display("");
-
-         error_ctr = error_ctr + 1;
+         $display("Got:      0x%032x", tbResult);
+         $display("outblock: 0x%01x", dut.encryptor.newBlock);
+         $display("");  
+         errorCTR = errorCTR + 1;
        end
-   end
-  endtask // ctr_mode_single_block_test
+    end
+  endtask
 
-
-  //----------------------------------------------------------------
-  // aes_core_test
-  // The main test functionality.
-  //----------------------------------------------------------------
   initial
-    begin : aes_core_test
+    begin : coreTest
       reg [127 : 0] nist_aes128_key0;
       reg [127 : 0] nist_aes128_key1;
       reg [127 : 0] nist_aes128_key2;
@@ -318,35 +227,40 @@ module TopTB();
       $display("");
 
       init_sim();
-      dump_dut_state();
-      reset_dut();
-      dump_dut_state();
+      dutState();
+      dutReset();
+      dutState();
 
 
       $display("ECB 128 bit key tests");
       $display("---------------------");
-      ecb_mode_single_block_test(8'h01, nist_aes128_key0,
-                                 nist_plaintext0, nist_ctr_128_enc_expected0);
+      singleBlockTest(
+        8'h01, 
+        nist_aes128_key0,nist_plaintext0, 
+        nist_ctr_128_enc_expected0
+      );
 
-     ecb_mode_single_block_test(8'h02, nist_aes128_key1,
-                                nist_plaintext1, nist_ctr_128_enc_expected1);
+     singleBlockTest(
+        8'h02, 
+        nist_aes128_key1,nist_plaintext1, 
+        nist_ctr_128_enc_expected1
+      );
 
-     ecb_mode_single_block_test(8'h03, nist_aes128_key2,
-                                nist_plaintext2, nist_ctr_128_enc_expected2);
+     singleBlockTest(
+        8'h03, 
+        nist_aes128_key2,nist_plaintext2, 
+        nist_ctr_128_enc_expected2
+      );
 
-     ecb_mode_single_block_test(8'h04, nist_aes128_key3,
-                                nist_plaintext3, nist_ctr_128_enc_expected3);
+     singleBlockTest(
+        8'h04, 
+        nist_aes128_key3,nist_plaintext3, 
+        nist_ctr_128_enc_expected3
+      );
 
-
-
-
-  
-      
-
-
-      display_test_result();
+      displayResults();
       $display("");
       $display("*** AES CTR simulation done. ***");
       $finish;
-    end // aes_top_test
-endmodule // TopTB
+    end
+endmodule

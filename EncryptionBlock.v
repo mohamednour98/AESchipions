@@ -1,4 +1,3 @@
-
 module EncryptionBlock(
     input wire            clk,
     input wire            reset,

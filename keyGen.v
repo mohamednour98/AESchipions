@@ -1,347 +1,245 @@
-module aes_key_mem(
-                   input wire            clk,
-                   input wire            reset_n,
+module KeyGen(
+    input wire            clk,
+    input wire            reset,
+    input wire [127 : 0]  key,                    
+    input wire            init,
+    input wire    [3 : 0] round,
+    output wire [127 : 0] roundKey,
+    output wire           ready,  
+    output wire [31 : 0]  sBoxRequest,
+    input wire  [31 : 0]  sBoxResponse
+  );
 
-                   input wire [127 : 0]  key,
-                  
-                   input wire            init,
+  localparam ctrlIdle = 3'h0;
+  localparam ctrlInit = 3'h1;
+  localparam ctrlGen = 3'h2;
+  localparam ctrlDone = 3'h3;
 
-                   input wire    [3 : 0] round,
-                   output wire [127 : 0] round_key,
-                   output wire           ready,
+  reg [127 : 0] keyMemory [0 : 14];
+  reg [127 : 0] keyMemoryNew;
+  reg           keyMemoryWE;
 
+  reg [127 : 0] prevK1Reg;
+  reg [127 : 0] prevK1New;
+  reg           prevK1WE;
 
-                   output wire [31 : 0]  sboxw,
-                   input wire  [31 : 0]  new_sboxw
-                  );
+  reg [3 : 0] roundCTRReg;
+  reg [3 : 0] roundCTRNew;
+  reg         roundCTRReset;
+  reg         roundCTRInc;
+  reg         roundCTRWE;
 
+  reg [2 : 0] ctrlReg;
+  reg [2 : 0] ctrlNew;
+  reg         ctrlWE;
 
-  //----------------------------------------------------------------
-  // Parameters.
-  //----------------------------------------------------------------
+  reg         readyReg;
+  reg         readyNew;
+  reg         readyWE;
 
+  reg [7 : 0] rConReg;
+  reg [7 : 0] rConNew;
+  reg         rConWE;
+  reg         rConSet;
+  reg         rConNext;
 
+  reg [31 : 0]  tempSBoxRequest;
+  reg           roundKeyUpdate;
+  reg [127 : 0] tempRoundKey;
 
-  localparam AES_128_NUM_ROUNDS = 10;
+  assign roundKey = tempRoundKey;
+  assign ready     = readyReg;
+  assign sBoxRequest     = tempSBoxRequest;
 
-
-  localparam CTRL_IDLE     = 3'h0;
-  localparam CTRL_INIT     = 3'h1;
-  localparam CTRL_GENERATE = 3'h2;
-  localparam CTRL_DONE     = 3'h3;
-
-
-  //----------------------------------------------------------------
-  // Registers.
-  //----------------------------------------------------------------
-  reg [127 : 0] key_mem [0 : 14];
-  reg [127 : 0] key_mem_new;
-  reg           key_mem_we;
-
-  reg [127 : 0] prev_key0_reg;
-  reg [127 : 0] prev_key0_new;
-  reg           prev_key0_we;
-
-  reg [127 : 0] prev_key1_reg;
-  reg [127 : 0] prev_key1_new;
-  reg           prev_key1_we;
-
-  reg [3 : 0] round_ctr_reg;
-  reg [3 : 0] round_ctr_new;
-  reg         round_ctr_rst;
-  reg         round_ctr_inc;
-  reg         round_ctr_we;
-
-  reg [2 : 0] key_mem_ctrl_reg;
-  reg [2 : 0] key_mem_ctrl_new;
-  reg         key_mem_ctrl_we;
-
-  reg         ready_reg;
-  reg         ready_new;
-  reg         ready_we;
-
-  reg [7 : 0] rcon_reg;
-  reg [7 : 0] rcon_new;
-  reg         rcon_we;
-  reg         rcon_set;
-  reg         rcon_next;
-
-
-  //----------------------------------------------------------------
-  // Wires.
-  //----------------------------------------------------------------
-  reg [31 : 0]  tmp_sboxw;
-  reg           round_key_update;
-  reg [127 : 0] tmp_round_key;
-
-
-  //----------------------------------------------------------------
-  // Concurrent assignments for ports.
-  //----------------------------------------------------------------
-  assign round_key = tmp_round_key;
-  assign ready     = ready_reg;
-  assign sboxw     = tmp_sboxw;
-
-
-  //----------------------------------------------------------------
-  // reg_update
-  //
-  // Update functionality for all registers in the core.
-  // All registers are positive edge triggered with asynchronous
-  // active low reset. All registers have write enable.
-  //----------------------------------------------------------------
-  always @ (posedge clk or negedge reset_n)
-    begin: reg_update
+  always @ (posedge clk or negedge reset)
+    begin: regUpdate
       integer i;
 
-      if (!reset_n)
+      if (!reset)
         begin
-          for (i = 0 ; i <= AES_128_NUM_ROUNDS ; i = i + 1)
-            key_mem [i] <= 128'h0;
+          for (i = 0 ; i <= 10 ; i = i + 1)
+            keyMemory [i] <= 128'h0;
 
-          rcon_reg         <= 8'h0;
-          ready_reg        <= 1'b0;
-          round_ctr_reg    <= 4'h0;
-          key_mem_ctrl_reg <= CTRL_IDLE;
+          rConReg         <= 8'h0;
+          readyReg        <= 1'b0;
+          roundCTRReg    <= 4'h0;
+          ctrlReg <= ctrlIdle;
         end
       else
         begin
-          if (round_ctr_we)
-            round_ctr_reg <= round_ctr_new;
+          if (roundCTRWE)
+            roundCTRReg <= roundCTRNew;
 
-          if (ready_we)
-            ready_reg <= ready_new;
+          if (readyWE)
+            readyReg <= readyNew;
 
-          if (rcon_we)
-            rcon_reg <= rcon_new;
+          if (rConWE)
+            rConReg <= rConNew;
 
-          if (key_mem_we)
-            key_mem[round_ctr_reg] <= key_mem_new;
+          if (keyMemoryWE)
+            keyMemory[roundCTRReg] <= keyMemoryNew;
 
-          if (prev_key0_we)
-            prev_key0_reg <= prev_key0_new;
+          if (prevK1WE)
+            prevK1Reg <= prevK1New;
 
-          if (prev_key1_we)
-            prev_key1_reg <= prev_key1_new;
-
-          if (key_mem_ctrl_we)
-            key_mem_ctrl_reg <= key_mem_ctrl_new;
+          if (ctrlWE)
+            ctrlReg <= ctrlNew;
         end
-    end // reg_update
+    end 
 
-
-  //----------------------------------------------------------------
-  // key_mem_read
-  //
-  // Combinational read port for the key memory.
-  //----------------------------------------------------------------
   always @*
-    begin : key_mem_read
-      tmp_round_key = key_mem[round];
-    end // key_mem_read
+    begin : memoryRead
+      tempRoundKey = keyMemory[round];
+    end 
 
-
-  //----------------------------------------------------------------
-  // round_key_gen
-  //
-  // The round key generator logic for AES-128 and AES-256.
-  //----------------------------------------------------------------
   always @*
-    begin: round_key_gen
-      reg [31 : 0]  w0, w1, w2, w3;
+    begin: roundKeyGen
+      reg [31 : 0] w0, w1, w2, w3;
       reg [31 : 0] k0, k1, k2, k3;
       reg [31 : 0] rconw, rotstw, tw, trw;
 
-      // Default assignments.
-      key_mem_new   = 128'h0;
-      key_mem_we    = 1'b0;
-      prev_key0_new = 128'h0;
-      prev_key0_we  = 1'b0;
-      prev_key1_new = 128'h0;
-      prev_key1_we  = 1'b0;
+      keyMemoryNew   = 128'h0;
+      keyMemoryWE    = 1'b0;
+      prevK1New = 128'h0;
+      prevK1WE  = 1'b0;
 
       k0 = 32'h0;
       k1 = 32'h0;
       k2 = 32'h0;
       k3 = 32'h0;
 
-      rcon_set   = 1'b1;
-      rcon_next  = 1'b0;
+      rConSet   = 1'b1;
+      rConNext  = 1'b0;
 
-      // Extract words and calculate intermediate values.
-      // Perform rotation of sbox word etc.
-      w0 = prev_key0_reg[127 : 096];
-      w1 = prev_key0_reg[095 : 064];
-      w2 = prev_key0_reg[063 : 032];
-      w3 = prev_key0_reg[031 : 000];
+      w0 = prevK1Reg[127 : 096];
+      w1 = prevK1Reg[095 : 064];
+      w2 = prevK1Reg[063 : 032];
+      w3 = prevK1Reg[031 : 000];
 
-      w0 = prev_key1_reg[127 : 096];
-      w1 = prev_key1_reg[095 : 064];
-      w2 = prev_key1_reg[063 : 032];
-      w3 = prev_key1_reg[031 : 000];
-
-      rconw = {rcon_reg, 24'h0};
-      tmp_sboxw = w3;
-      rotstw = {new_sboxw[23 : 00], new_sboxw[31 : 24]};
+      rconw = {rConReg, 24'h0};
+      tempSBoxRequest = w3;
+      rotstw = {sBoxResponse[23 : 00], sBoxResponse[31 : 24]};
       trw = rotstw ^ rconw;
-      tw = new_sboxw;
+      tw = sBoxResponse;
 
-      // Generate the specific round keys.
-      if (round_key_update)
+      if (roundKeyUpdate)
         begin
-          rcon_set   = 1'b0;
-          key_mem_we = 1'b1;
-         
-           
+          rConSet   = 1'b0;
+          keyMemoryWE = 1'b1;
             
-                if (round_ctr_reg == 0)
-                  begin
-                    key_mem_new   = key[127 : 0];
-                    prev_key1_new = key[127 : 0];
-                    prev_key1_we  = 1'b1;
-                    rcon_next     = 1'b1;
-                  end
-                else
-                  begin
-                    k0 = w0 ^ trw;
-                    k1 = w1 ^ w0 ^ trw;
-                    k2 = w2 ^ w1 ^ w0 ^ trw;
-                    k3 = w3 ^ w2 ^ w1 ^ w0 ^ trw;
+          if (roundCTRReg == 0)
+            begin
+              keyMemoryNew   = key[127 : 0];
+              prevK1New = key[127 : 0];
+              prevK1WE  = 1'b1;
+              rConNext     = 1'b1;
+          end
+          else
+            begin
+              k0 = w0 ^ trw;
+              k1 = w1 ^ w0 ^ trw;
+              k2 = w2 ^ w1 ^ w0 ^ trw;
+              k3 = w3 ^ w2 ^ w1 ^ w0 ^ trw;
 
-                    key_mem_new   = {k0, k1, k2, k3};
-                    prev_key1_new = {k0, k1, k2, k3};
-                    prev_key1_we  = 1'b1;
-                    rcon_next     = 1'b1;
-                  end
-              
-
-          
-    
+              keyMemoryNew   = {k0, k1, k2, k3};
+              prevK1New = {k0, k1, k2, k3};
+              prevK1WE  = 1'b1;
+              rConNext     = 1'b1;
+            end
         end
-    end // round_key_gen
+    end
 
-
-  //----------------------------------------------------------------
-  // rcon_logic
-  //
-  // Caclulates the rcon value for the different key expansion
-  // iterations.
-  //----------------------------------------------------------------
   always @*
-    begin : rcon_logic
+    begin : rConLogic
       reg [7 : 0] tmp_rcon;
-      rcon_new = 8'h00;
-      rcon_we  = 1'b0;
+      rConNew = 8'h00;
+      rConWE  = 1'b0;
 
-      tmp_rcon = {rcon_reg[6 : 0], 1'b0} ^ (8'h1b & {8{rcon_reg[7]}});
+      tmp_rcon = {rConReg[6 : 0], 1'b0} ^ (8'h1b & {8{rConReg[7]}});
 
-      if (rcon_set)
+      if (rConSet)
         begin
-          rcon_new = 8'h8d;
-          rcon_we  = 1'b1;
+          rConNew = 8'h8d;
+          rConWE  = 1'b1;
         end
 
-      if (rcon_next)
+      if (rConNext)
         begin
-          rcon_new = tmp_rcon[7 : 0];
-          rcon_we  = 1'b1;
-        end
-    end
-
-
-  //----------------------------------------------------------------
-  // round_ctr
-  //
-  // The round counter logic with increase and reset.
-  //----------------------------------------------------------------
-  always @*
-    begin : round_ctr
-      round_ctr_new = 4'h0;
-      round_ctr_we  = 1'b0;
-
-      if (round_ctr_rst)
-        begin
-          round_ctr_new = 4'h0;
-          round_ctr_we  = 1'b1;
-        end
-
-      else if (round_ctr_inc)
-        begin
-          round_ctr_new = round_ctr_reg + 1'b1;
-          round_ctr_we  = 1'b1;
+          rConNew = tmp_rcon[7 : 0];
+          rConWE  = 1'b1;
         end
     end
 
-
-  //----------------------------------------------------------------
-  // key_mem_ctrl
-  //
-  //
-  // The FSM that controls the round key generation.
-  //----------------------------------------------------------------
   always @*
-    begin: key_mem_ctrl
-      reg [3 : 0] num_rounds;
+    begin : roundCTR
+      roundCTRNew = 4'h0;
+      roundCTRWE  = 1'b0;
 
-      // Default assignments.
-      ready_new        = 1'b0;
-      ready_we         = 1'b0;
-      round_key_update = 1'b0;
-      round_ctr_rst    = 1'b0;
-      round_ctr_inc    = 1'b0;
-      key_mem_ctrl_new = CTRL_IDLE;
-      key_mem_ctrl_we  = 1'b0;
+      if (roundCTRReset)
+        begin
+          roundCTRNew = 4'h0;
+          roundCTRWE  = 1'b1;
+        end
 
-     
-        num_rounds = AES_128_NUM_ROUNDS;
+      else if (roundCTRInc)
+        begin
+          roundCTRNew = roundCTRReg + 1'b1;
+          roundCTRWE  = 1'b1;
+        end
+    end
+
+  always @*
+    begin: memoryCtrl
+      reg [3 : 0] numOfRounds;
+
+      readyNew        = 1'b0;
+      readyWE         = 1'b0;
+      roundKeyUpdate = 1'b0;
+      roundCTRReset    = 1'b0;
+      roundCTRInc    = 1'b0;
+      ctrlNew = ctrlIdle;
+      ctrlWE  = 1'b0;
+      numOfRounds = 10;
    
-
-      case(key_mem_ctrl_reg)
-        CTRL_IDLE:
+      case(ctrlReg)
+        ctrlIdle:
           begin
             if (init)
               begin
-                ready_new        = 1'b0;
-                ready_we         = 1'b1;
-                key_mem_ctrl_new = CTRL_INIT;
-                key_mem_ctrl_we  = 1'b1;
+                readyNew        = 1'b0;
+                readyWE         = 1'b1;
+                ctrlNew = ctrlInit;
+                ctrlWE  = 1'b1;
               end
           end
 
-        CTRL_INIT:
+        ctrlInit:
           begin
-            round_ctr_rst    = 1'b1;
-            key_mem_ctrl_new = CTRL_GENERATE;
-            key_mem_ctrl_we  = 1'b1;
+            roundCTRReset    = 1'b1;
+            ctrlNew = ctrlGen;
+            ctrlWE  = 1'b1;
           end
 
-        CTRL_GENERATE:
+        ctrlGen:
           begin
-            round_ctr_inc    = 1'b1;
-            round_key_update = 1'b1;
-            if (round_ctr_reg == num_rounds)
+            roundCTRInc    = 1'b1;
+            roundKeyUpdate = 1'b1;
+            if (roundCTRReg == numOfRounds)
               begin
-                key_mem_ctrl_new = CTRL_DONE;
-                key_mem_ctrl_we  = 1'b1;
+                ctrlNew = ctrlDone;
+                ctrlWE  = 1'b1;
               end
           end
 
-        CTRL_DONE:
+        ctrlDone:
           begin
-            ready_new        = 1'b1;
-            ready_we         = 1'b1;
-            key_mem_ctrl_new = CTRL_IDLE;
-            key_mem_ctrl_we  = 1'b1;
+            readyNew        = 1'b1;
+            readyWE         = 1'b1;
+            ctrlNew = ctrlIdle;
+            ctrlWE  = 1'b1;
           end
 
-        default:
-          begin
-          end
-      endcase // case (key_mem_ctrl_reg)
-
-    end // key_mem_ctrl
-endmodule // aes_key_mem
-
-//======================================================================
-// EOF aes_key_mem.v
-//======================================================================
+        default: begin end
+      endcase 
+    end
+endmodule

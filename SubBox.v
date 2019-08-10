@@ -1,14 +1,14 @@
 module SubBox(
-  input wire[31:0] sboxw,
-  output wire[31:0] new_sboxw
+  input wire[31:0] sBoxRequest,
+  output wire[31:0] sBoxResponse
 );
 
   wire[7:0] sBox[0:255];
 
-  assign new_sboxw[31 : 24] = sBox[sboxw[31 : 24]];
-  assign new_sboxw[23 : 16] = sBox[sboxw[23 : 16]];
-  assign new_sboxw[15 : 08] = sBox[sboxw[15 : 08]];
-  assign new_sboxw[07 : 00] = sBox[sboxw[07 : 00]];
+  assign sBoxResponse[31 : 24] = sBox[sBoxRequest[31 : 24]];
+  assign sBoxResponse[23 : 16] = sBox[sBoxRequest[23 : 16]];
+  assign sBoxResponse[15 : 08] = sBox[sBoxRequest[15 : 08]];
+  assign sBoxResponse[07 : 00] = sBox[sBoxRequest[07 : 00]];
 
   assign sBox[8'h00] = 8'h63;
   assign sBox[8'h01] = 8'h7c;
