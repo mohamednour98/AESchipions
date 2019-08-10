@@ -55,7 +55,7 @@ module TopTB();
       $display("Key generation done");
       plainText = inText;
       next = 1;
-      #(twicePeriod);
+      #(period);
       next = 0;
       waitReady();
       #(period);
@@ -84,7 +84,7 @@ module TopTB();
 
     keyToBe = 128'h2b7e151628aed2a6abf7158809cf4f3c;
     inData = 128'h6bc1bee22e409f96e93d7e117393172a;
-    outDataExp = 128'h3b3fd92eb72dad20333449f8e83cfb4a;
+    outDataExp = 128'h874d6191b620e3261bef6864990db6ce;
 
     initTest();
     restart();

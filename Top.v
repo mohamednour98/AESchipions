@@ -1,22 +1,19 @@
 module Top(
-  input next,
   input clk,
-  input init,
   input reset,
+  input init,
+  input next,
   input[127:0] data,
   input[127:0] key,
   output enc_ready,
   output[127:0] result,
   output wire ready
 );
+
   localparam CTRL_IDLE  = 2'h0;
   localparam CTRL_INIT  = 2'h1;
   localparam CTRL_NEXT  = 2'h2;
 
-
-  wire[127:0] roundKey, block, outEnc;
-  wire[31:0] beforeSub, afterSub;
-  wire[3:0] round;
   wire[63:0] count;
   wire [63:0] nonce;
 
@@ -66,6 +63,7 @@ module Top(
     .new_sboxw(new_sboxw)
   );
 
+/*
   EncryptionBlock Encryptor(
     .clk(clk),
     .reset(reset),
@@ -74,8 +72,23 @@ module Top(
     .roundKey(round_key),
     .sboxw(enc_sboxw),
     .new_sboxw(new_sboxw),
-    .block({nonce[63:0],count[63:0]}),
+    .block(128'hf0f1f2f3f4f5f6f7f8f9fafbfcfdfeff),
     .newBlock(enc_new_block),
+    .ready(enc_ready)
+  );
+*/
+
+  aes_encipher_block Encryptor(
+    .clk(clk),
+    .reset_n(reset),
+    .next(enc_next),
+    .keylen(1'b0),
+    .round(enc_round_nr),
+    .round_key(round_key),
+    .sboxw(enc_sboxw),
+    .new_sboxw(new_sboxw),
+    .block(128'hf0f1f2f3f4f5f6f7f8f9fafbfcfdfeff),
+    .new_block(enc_new_block),
     .ready(enc_ready)
   );
 
@@ -122,8 +135,8 @@ module Top(
           if (aes_core_ctrl_we)
             aes_core_ctrl_reg <= aes_core_ctrl_new;
 
-          if(enc_ready)
-            muxed_new_block <= data ^ enc_new_block;
+          // if(enc_ready)
+          //   muxed_new_block <= data ^ enc_new_block;
         end
     end // reg_update
   always @*
@@ -162,7 +175,7 @@ module Top(
                 aes_core_ctrl_new = CTRL_INIT;
                 aes_core_ctrl_we  = 1'b1;
               end
-            else if (start)
+            else if (next)
               begin
                 init_state        = 1'b0;
                 ready_new         = 1'b0;

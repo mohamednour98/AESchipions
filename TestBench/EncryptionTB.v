@@ -2,7 +2,7 @@
 //------------------------------------------------------------------
 // Test module.
 //------------------------------------------------------------------
-module tb_aes_encipher_block();
+module tb_aes_encipher_block1();
 
   //----------------------------------------------------------------
   // Internal constant and parameter definitions.
@@ -56,8 +56,8 @@ module tb_aes_encipher_block();
   //----------------------------------------------------------------
   // We need an sbox for the tests.
   SubBox sbox(
-                .beforeSub(tb_sboxw),
-                .afterSub(tb_new_sboxw)
+                .sboxw(tb_sboxw),
+                .new_sboxw(tb_new_sboxw)
                );
 
 
@@ -71,8 +71,8 @@ module tb_aes_encipher_block();
                          .round(tb_round),
                          .roundKey(tb_round_key),
 
-                         .beforeSub(tb_sboxw),
-                         .afterSub(tb_new_sboxw),
+                         .sboxw(tb_sboxw),
+                         .new_sboxw(tb_new_sboxw),
 
                          .block(tb_block),
                          .newBlock(tb_new_block),
@@ -133,7 +133,7 @@ module tb_aes_encipher_block();
 
       $display("Internal data values");
       $display("roundKey = 0x%016x", dut.roundKey);
-      $display("beforeSub = 0x%08x, afterSub = 0x%08x", dut.beforeSub, dut.afterSub);
+      $display("sboxw = 0x%08x, new_sboxw = 0x%08x", dut.sboxw, dut.new_sboxw);
       $display("block0 = 0x%08x, block1 = 0x%08x, block2 = 0x%08x, block3 = 0x%08x",
                dut.block0Reg, dut.block1Reg, dut.block2Reg, dut.block3Reg);
       $display("");
@@ -343,9 +343,9 @@ module tb_aes_encipher_block();
       key_mem[14] = 128'h00000000000000000000000000000000;
 
       test_ecb_enc(AES_128_BIT_KEY, nist_plaintext0, nist_ecb_128_enc_expected0);
-      test_ecb_enc(AES_128_BIT_KEY, nist_plaintext1, nist_ecb_128_enc_expected1);
-      test_ecb_enc(AES_128_BIT_KEY, nist_plaintext2, nist_ecb_128_enc_expected2);
-      test_ecb_enc(AES_128_BIT_KEY, nist_plaintext3, nist_ecb_128_enc_expected3);
+      //test_ecb_enc(AES_128_BIT_KEY, nist_plaintext1, nist_ecb_128_enc_expected1);
+      //test_ecb_enc(AES_128_BIT_KEY, nist_plaintext2, nist_ecb_128_enc_expected2);
+      //test_ecb_enc(AES_128_BIT_KEY, nist_plaintext3, nist_ecb_128_enc_expected3);
 
 /*
       // NIST 256 bit ECB tests.
