@@ -5,7 +5,6 @@ module Top(
   input reset,
   input[127:0] data,
   input[127:0] key,
-  output encReady,
   output[127:0] outData,
   output ready
 );
@@ -33,7 +32,7 @@ module Top(
   wire [3 : 0]   dec_round_nr;
   wire [127 : 0] dec_new_block;
   wire           dec_ready;
-
+  wire [127 : 0] nonceIv;
   wire [31 : 0]  keymem_sboxw;
   wire [31 : 0]  new_sboxw;
 
@@ -51,9 +50,11 @@ module Top(
   reg         ready_reg;
   reg         ready_new;
   reg         ready_we;
-
+  reg  [127:0]result_out;
   assign ready        = ready_reg;
   assign result       = muxed_new_block;
+  assign outData      = result_out;
+  assign nonceIv={nonce[63:0],count[63:0]};
 
   aes_key_mem KeyGen(
     .clk(clk),
@@ -75,8 +76,7 @@ module Top(
     .round_key(round_key),
     .sboxw(enc_sboxw),
     .new_sboxw(new_sboxw),
-    .block({nonce[63:0],count[63:0]}),
-   // .block(128'hf0f1f2f3f4f5f6f7f8f9fafbfcfdfeff),
+    .block(nonceIv),
     .new_block(enc_new_block),
     .ready(enc_ready)
   );
@@ -87,7 +87,7 @@ module Top(
   );
 
   Counter counting(
-    .clk(start),
+    .clk(next),
     .reset(reset),
     .count(count)
   );
@@ -108,6 +108,17 @@ random fornonce(
         end
     end // sbox_mux
 
+  always @*
+    begin : result_xor
+      if (enc_ready)
+        begin
+          result_out = enc_new_block^data;
+        end
+      else
+        begin
+           result_out = 128'h0;
+        end
+    end // result_xor
 
   always @ (posedge clk or negedge reset)
     begin: reg_update
@@ -166,7 +177,7 @@ random fornonce(
                 aes_core_ctrl_new = CTRL_INIT;
                 aes_core_ctrl_we  = 1'b1;
               end
-            else if (start)
+            else if (next)
               begin
                 init_state        = 1'b0;
                 ready_new         = 1'b0;
