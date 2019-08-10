@@ -1,19 +1,22 @@
 module Top(
-  input clk,
-  input reset,
-  input init,
   input next,
+  input clk,
+  input init,
+  input reset,
   input[127:0] data,
   input[127:0] key,
-  output enc_ready,
-  output[127:0] result,
-  output wire ready
+  output encReady,
+  output[127:0] outData,
+  output ready
 );
-
   localparam CTRL_IDLE  = 2'h0;
   localparam CTRL_INIT  = 2'h1;
   localparam CTRL_NEXT  = 2'h2;
 
+
+  wire[127:0] roundKey, block, outEnc;
+  wire[31:0] beforeSub, afterSub;
+  wire[3:0] round;
   wire[63:0] count;
   wire [63:0] nonce;
 
@@ -23,6 +26,7 @@ module Top(
 
   wire [3 : 0]   enc_round_nr;
   wire [127 : 0] enc_new_block;
+  wire           enc_ready;
   wire [31 : 0]  enc_sboxw;
 
  
@@ -63,31 +67,16 @@ module Top(
     .new_sboxw(new_sboxw)
   );
 
-/*
   EncryptionBlock Encryptor(
-    .clk(clk),
-    .reset(reset),
-    .next(enc_next),
-    .round(enc_round_nr),
-    .roundKey(round_key),
-    .sboxw(enc_sboxw),
-    .new_sboxw(new_sboxw),
-    .block(128'hf0f1f2f3f4f5f6f7f8f9fafbfcfdfeff),
-    .newBlock(enc_new_block),
-    .ready(enc_ready)
-  );
-*/
-
-  aes_encipher_block Encryptor(
     .clk(clk),
     .reset_n(reset),
     .next(enc_next),
-    .keylen(1'b0),
     .round(enc_round_nr),
     .round_key(round_key),
     .sboxw(enc_sboxw),
     .new_sboxw(new_sboxw),
-    .block(128'hf0f1f2f3f4f5f6f7f8f9fafbfcfdfeff),
+    .block({nonce[63:0],count[63:0]}),
+   // .block(128'hf0f1f2f3f4f5f6f7f8f9fafbfcfdfeff),
     .new_block(enc_new_block),
     .ready(enc_ready)
   );
@@ -102,10 +91,10 @@ module Top(
     .reset(reset),
     .count(count)
   );
-  random fornonce(
-    .reset(reset),
-    .outData(nonce)
-  );
+random fornonce(
+   .reset(reset),
+  .outData(nonce)
+);
 
   always @*
     begin : sbox_mux
@@ -124,19 +113,19 @@ module Top(
     begin: reg_update
       if (!reset)
         begin
+         
           ready_reg         <= 1'b1;
           aes_core_ctrl_reg <= CTRL_IDLE;
         end
       else
         begin
+         
+
           if (ready_we)
             ready_reg <= ready_new;
 
           if (aes_core_ctrl_we)
             aes_core_ctrl_reg <= aes_core_ctrl_new;
-
-          // if(enc_ready)
-          //   muxed_new_block <= data ^ enc_new_block;
         end
     end // reg_update
   always @*
@@ -144,11 +133,13 @@ module Top(
       enc_next = 1'b0;
       dec_next = 1'b0;
 
-      // Encipher operations
-      enc_next        = next;
-      muxed_round_nr  = enc_round_nr;
-      muxed_new_block = enc_new_block;
-      muxed_ready     = enc_ready;
+      
+       
+          // Encipher operations
+          enc_next        = next;
+          muxed_round_nr  = enc_round_nr;
+          muxed_new_block = enc_new_block;
+          muxed_ready     = enc_ready;
      
     end // encdec_mux
 
@@ -175,7 +166,7 @@ module Top(
                 aes_core_ctrl_new = CTRL_INIT;
                 aes_core_ctrl_we  = 1'b1;
               end
-            else if (next)
+            else if (start)
               begin
                 init_state        = 1'b0;
                 ready_new         = 1'b0;
