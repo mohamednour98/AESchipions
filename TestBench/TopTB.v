@@ -11,7 +11,7 @@ module TopTB();
 
   reg            tbClk;
   reg            tbReset;
- 
+
   reg            tbInit;
   reg            tbNext;
   wire           tbReady;
@@ -19,7 +19,7 @@ module TopTB();
 
   reg [127 : 0]  tbBlock;
   wire [127 : 0] tbResult;
- 
+
 
   Top dut(
       .clk(tbClk),
@@ -53,8 +53,8 @@ module TopTB();
       $display("State of DUT");
       $display("------------");
       $display("Inputs and outputs:");
-    
-     
+
+
       $display("block = 0x%032x", dut.data);
       $display("");
       $display("ready = 0x%01x", dut.ready);
@@ -66,7 +66,7 @@ module TopTB();
       $display("");
     end
   endtask
-
+/*
   task dumpKeys;
     begin
       $display("State of key memory in DUT:");
@@ -84,7 +84,7 @@ module TopTB();
       $display("");
     end
   endtask
-
+*/
   task dutReset;
     begin
       $display("*** Toggle reset.");
@@ -92,9 +92,9 @@ module TopTB();
       #(2 * period);
       tbReset = 1;
     end
-  endtask 
+  endtask
 
-  task init_sim;
+  task initSimulation;
     begin
       cycleCTR = 0;
       errorCTR = 0;
@@ -102,11 +102,11 @@ module TopTB();
 
       tbClk     = 0;
       tbReset = 1;
-  
+
       tbInit    = 0;
       tbNext    = 0;
       tbKey     = {4{32'h00000000}};
-     
+
 
       tbBlock  = {4{32'h00000000}};
     end
@@ -171,7 +171,7 @@ module TopTB();
         $display("Plaintext:    0x%032x", dut.data);
         $display("Ciphertext:   0x%032x", dut.outData);
         $display("nonce(iv):    0x%032x", dut.nonceIv);
-        $display("outblock:     0x%032x", dut.encryptor.newBlock);                
+        $display("outblock:     0x%032x", dut.encryptor.newBlock);
         $display("");
        end
      else
@@ -180,7 +180,7 @@ module TopTB();
          $display("Expected: 0x%032x", expected);
          $display("Got:      0x%032x", tbResult);
          $display("outblock: 0x%01x", dut.encryptor.newBlock);
-         $display("");  
+         $display("");
          errorCTR = errorCTR + 1;
        end
     end
@@ -203,11 +203,11 @@ module TopTB();
       reg [127 : 0] nist_ctr_128_enc_expected2;
       reg [127 : 0] nist_ctr_128_enc_expected3;
 
-  
+
       nist_aes128_key0 = 128'h2b7e151628aed2a6abf7158809cf4f3c;
       nist_aes128_key1 = 128'hf0f1f2f3f4f5f6f7f8f9fafbfcfdfeff;
       nist_aes128_key2 = 128'h603deb1015ca71be2b73aef0857d7781;
-      nist_aes128_key3 = 128'h1f352c073b6108d72d9810a30914dff4;      
+      nist_aes128_key3 = 128'h1f352c073b6108d72d9810a30914dff4;
 
       nist_plaintext0 = 128'h6bc1bee22e409f96e93d7e117393172a;
       nist_plaintext1 = 128'hae2d8a571e03ac9c9eb76fac45af8e51;
@@ -226,7 +226,7 @@ module TopTB();
       $display("     ================================");
       $display("");
 
-      init_sim();
+      initSimulation();
       dutState();
       dutReset();
       dutState();
@@ -235,28 +235,63 @@ module TopTB();
       $display("ECB 128 bit key tests");
       $display("---------------------");
       singleBlockTest(
-        8'h01, 
-        nist_aes128_key0,nist_plaintext0, 
+        8'h01,
+        nist_aes128_key0,
+        nist_plaintext0,
         nist_ctr_128_enc_expected0
       );
 
      singleBlockTest(
-        8'h02, 
-        nist_aes128_key1,nist_plaintext1, 
+        8'h02,
+        nist_aes128_key1,
+        nist_plaintext1,
         nist_ctr_128_enc_expected1
       );
 
      singleBlockTest(
-        8'h03, 
-        nist_aes128_key2,nist_plaintext2, 
+        8'h03,
+        nist_aes128_key2,
+        nist_plaintext2,
         nist_ctr_128_enc_expected2
       );
 
      singleBlockTest(
-        8'h04, 
-        nist_aes128_key3,nist_plaintext3, 
+        8'h04,
+        nist_aes128_key3,
+        nist_plaintext3,
         nist_ctr_128_enc_expected3
       );
+
+      dutReset();
+
+      singleBlockTest(
+        8'h05,
+        nist_aes128_key0,
+        nist_ctr_128_enc_expected0,
+        nist_plaintext0
+      );
+
+     singleBlockTest(
+        8'h06,
+        nist_aes128_key1,
+        nist_ctr_128_enc_expected1,
+        nist_plaintext1
+      );
+
+     singleBlockTest(
+        8'h07,
+        nist_aes128_key2,
+        nist_ctr_128_enc_expected2,
+        nist_plaintext2
+      );
+
+     singleBlockTest(
+        8'h08,
+        nist_aes128_key3,
+        nist_ctr_128_enc_expected3,
+        nist_plaintext3
+      );
+
 
       displayResults();
       $display("");
