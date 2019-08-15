@@ -27,6 +27,8 @@ module TopTB();
       .init(tbInit),
       .next(tbNext),
       .ready(tbReady),
+      .mode(1'b0),
+      .inNonceCount({32{4'h0}}),
       .key(tbKey),
       .data(tbBlock),
       .outData(tbResult)
@@ -170,7 +172,7 @@ module TopTB();
         $display("Key:          0x%032x",dut.key);
         $display("Plaintext:    0x%032x", dut.data);
         $display("Ciphertext:   0x%032x", dut.outData);
-        $display("nonce(iv):    0x%032x", dut.nonceIv);
+        $display("nonce(iv):    0x%032x", dut.nonceIV);
         $display("outblock:     0x%032x", dut.encryptor.newBlock);
         $display("");
        end

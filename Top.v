@@ -3,6 +3,8 @@ module Top(
   input wire clk,
   input wire init,
   input wire reset,
+  input wire mode,
+  input wire[127:0] inNonceCount,
   input wire[127:0] data,
   input wire[127:0] key,
   output wire[127:0] outData,
@@ -12,7 +14,6 @@ module Top(
   localparam ctrlIdle  = 2'h0;
   localparam ctrlInit  = 2'h1;
   localparam ctrlNext  = 2'h2;
-
 
   wire[63:0] count;
   wire[63:0] nonce;
@@ -26,13 +27,13 @@ module Top(
   wire          encReady;
   wire[31 : 0]  encSBoxRequest;
 
- 
-  wire[127 : 0] nonceIv;
+
+  wire[127 : 0] nonceIV;
   wire[31 : 0]  keySBoxRequest;
   wire[31 : 0]  sBoxResponse;
 
   reg           encNext;
-  reg[31 : 0]   selSBoxRequest;	
+  reg[31 : 0]   selSBoxRequest;
   reg           initState;
   reg[127 : 0]  selNewBlock;
   reg[3 : 0]    selRoundNum;
@@ -44,11 +45,12 @@ module Top(
   reg        readyReg;
   reg        readyNew;
   reg        readyWE;
-  reg [127:0]resultOut;
+  reg[127:0] resultOut;
+
   assign ready        = readyReg;
   assign result       = selNewBlock;
   assign outData      = resultOut;
-  assign nonceIv={nonce[63:0], count[63:0]};
+  assign nonceIV = mode ? inNonceCount[127:0] : {nonce[63:0], count[63:0]};
 
   KeyGen keyGenInst(
     .clk(clk),
@@ -70,13 +72,13 @@ module Top(
     .roundKey(roundKey),
     .sBoxRequest(encSBoxRequest),
     .sBoxResponse(sBoxResponse),
-    .block(nonceIv),
+    .block(nonceIV),
     .newBlock(encNewBlock),
     .ready(encReady)
   );
 
   SubBox subBoxInst(
-	  .sBoxRequest(selSBoxRequest), 
+	  .sBoxRequest(selSBoxRequest),
 	  .sBoxResponse(sBoxResponse)
   );
 
@@ -89,6 +91,13 @@ module Top(
     .reset(reset),
     .outData(nonce)
   );
+
+  // always@(*) begin
+  //   if(mode == customNonce)
+  //     assign selBlock = {inNonce[63:0], count[63:0]};
+  //   else
+  //     assign selBlock = {nonce[63:0], count[63:0]};
+  // end
 
   always @*
     begin : sBoxSel
@@ -112,7 +121,7 @@ module Top(
         begin
            resultOut = 128'h0;
         end
-    end 
+    end
 
   always @ (posedge clk or negedge reset)
     begin: regUpdate
@@ -128,15 +137,15 @@ module Top(
           if (ctrlWE)
             ctrlReg <= ctrlNew;
         end
-    end 
+    end
   always @*
-    begin 
+    begin
       encNext = 1'b0;
       encNext        = next;
       selRoundNum  = encRoundNum;
       selNewBlock = encNewBlock;
-      selReady     = encReady;  
-    end 
+      selReady     = encReady;
+    end
 
     always @*
     begin : ctrl
@@ -164,7 +173,7 @@ module Top(
                 initState        = 1'b0;
                 readyNew         = 1'b0;
                 readyWE          = 1'b1;
-               
+
                 ctrlNew = ctrlNext;
                 ctrlWE  = 1'b1;
               end
@@ -192,13 +201,13 @@ module Top(
               begin
                 readyNew         = 1'b1;
                 readyWE          = 1'b1;
-               
+
                 ctrlNew = ctrlIdle;
                 ctrlWE  = 1'b1;
              end
           end
 
         default: begin end
-      endcase 
+      endcase
     end
 endmodule
