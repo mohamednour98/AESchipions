@@ -9,16 +9,18 @@ module TopTB();
   reg [31 : 0] errorCTR;
   reg [31 : 0] tcCTR;
 
-  reg            tbClk;
-  reg            tbReset;
+  reg tbClk;
+  reg tbReset;
+  reg mode;
 
-  reg            tbInit;
-  reg            tbNext;
-  wire           tbReady;
-  reg [127 : 0]  tbKey;
+  reg tbInit;
+  reg tbNext;
+  wire tbReady;
+  reg[127:0] tbKey;
+  reg[127:0] initVector;
 
-  reg [127 : 0]  tbBlock;
-  wire [127 : 0] tbResult;
+  reg[127:0]  tbBlock;
+  wire[127:0] tbResult;
 
 
   Top dut(
@@ -27,8 +29,8 @@ module TopTB();
       .init(tbInit),
       .next(tbNext),
       .ready(tbReady),
-      .mode(1'b0),
-      .inNonceCount({32{4'h0}}),
+      .mode(mode),
+      .inNonceCount(initVector),
       .key(tbKey),
       .data(tbBlock),
       .outData(tbResult)
@@ -190,36 +192,51 @@ module TopTB();
 
   initial
     begin : coreTest
-      reg [127 : 0] nist_aes128_key0;
-      reg [127 : 0] nist_aes128_key1;
-      reg [127 : 0] nist_aes128_key2;
-      reg [127 : 0] nist_aes128_key3;
+      reg[127:0] key0;
+      reg[127:0] key1;
+      reg[127:0] key2;
+      reg[127:0] key3;
 
-      reg [127 : 0] nist_plaintext0;
-      reg [127 : 0] nist_plaintext1;
-      reg [127 : 0] nist_plaintext2;
-      reg [127 : 0] nist_plaintext3;
+      reg[127:0] nistKey;
 
-      reg [127 : 0] nist_ctr_128_enc_expected0;
-      reg [127 : 0] nist_ctr_128_enc_expected1;
-      reg [127 : 0] nist_ctr_128_enc_expected2;
-      reg [127 : 0] nist_ctr_128_enc_expected3;
+      reg[127:0] PT0;
+      reg[127:0] PT1;
+      reg[127:0] PT2;
+      reg[127:0] PT3;
 
+      reg[127:0] nistPT;
 
-      nist_aes128_key0 = 128'h2b7e151628aed2a6abf7158809cf4f3c;
-      nist_aes128_key1 = 128'hf0f1f2f3f4f5f6f7f8f9fafbfcfdfeff;
-      nist_aes128_key2 = 128'h603deb1015ca71be2b73aef0857d7781;
-      nist_aes128_key3 = 128'h1f352c073b6108d72d9810a30914dff4;
+      reg[127:0] exp0;
+      reg[127:0] exp1;
+      reg[127:0] exp2;
+      reg[127:0] exp3;
 
-      nist_plaintext0 = 128'h6bc1bee22e409f96e93d7e117393172a;
-      nist_plaintext1 = 128'hae2d8a571e03ac9c9eb76fac45af8e51;
-      nist_plaintext2 = 128'h30c81c46a35ce411e5fbc1191a0a52ef;
-      nist_plaintext3 = 128'hf69f2445df4f9b17ad2b417be66c3710;
+      reg[127:0] nistExp;
 
-      nist_ctr_128_enc_expected0 = 128'h55f30b0d787661b5711eaaf802d4e073;
-      nist_ctr_128_enc_expected1 = 128'he890dea1da4ce22b4d24ee0f73b37c53;
-      nist_ctr_128_enc_expected2 = 128'h14d33b87b5f75b2b009fdebfcf86d2db;
-      nist_ctr_128_enc_expected3 = 128'h51df6efd98beaacec138db2d773130eb;
+      mode = 1'b1;
+
+      initVector = 128'hf0f1f2f3f4f5f6f7f8f9fafbfcfdfeff;
+
+      key0 = 128'h2b7e151628aed2a6abf7158809cf4f3c;
+      key1 = 128'hf0f1f2f3f4f5f6f7f8f9fafbfcfdfeff;
+      key2 = 128'h603deb1015ca71be2b73aef0857d7781;
+      key3 = 128'h1f352c073b6108d72d9810a30914dff4;
+
+      nistKey = 128'h2b7e151628aed2a6abf7158809cf4f3c;
+
+      PT0 = 128'h6bc1bee22e409f96e93d7e117393172a;
+      PT1 = 128'hae2d8a571e03ac9c9eb76fac45af8e51;
+      PT2 = 128'h30c81c46a35ce411e5fbc1191a0a52ef;
+      PT3 = 128'hf69f2445df4f9b17ad2b417be66c3710;
+
+      nistPT = 128'h6bc1bee22e409f96e93d7e117393172a;
+
+      exp0 = 128'h55f30b0d787661b5711eaaf802d4e073;
+      exp1 = 128'he890dea1da4ce22b4d24ee0f73b37c53;
+      exp2 = 128'h14d33b87b5f75b2b009fdebfcf86d2db;
+      exp3 = 128'h51df6efd98beaacec138db2d773130eb;
+
+      nistExp = 128'h874d6191b620e3261bef6864990db6ce;
 
 
 
@@ -236,64 +253,73 @@ module TopTB();
 
       $display("ECB 128 bit key tests");
       $display("---------------------");
-      singleBlockTest(
-        8'h01,
-        nist_aes128_key0,
-        nist_plaintext0,
-        nist_ctr_128_enc_expected0
-      );
+      if(!mode) begin
+        singleBlockTest(
+          8'h01,
+          key0,
+          PT0,
+          exp0
+        );
 
-     singleBlockTest(
-        8'h02,
-        nist_aes128_key1,
-        nist_plaintext1,
-        nist_ctr_128_enc_expected1
-      );
+        singleBlockTest(
+            8'h02,
+            key1,
+            PT1,
+            exp1
+          );
 
-     singleBlockTest(
-        8'h03,
-        nist_aes128_key2,
-        nist_plaintext2,
-        nist_ctr_128_enc_expected2
-      );
+        singleBlockTest(
+            8'h03,
+            key2,
+            PT2,
+            exp2
+          );
 
-     singleBlockTest(
-        8'h04,
-        nist_aes128_key3,
-        nist_plaintext3,
-        nist_ctr_128_enc_expected3
-      );
+        singleBlockTest(
+            8'h04,
+            key3,
+            PT3,
+            exp3
+          );
 
-      dutReset();
+          dutReset();
 
-      singleBlockTest(
-        8'h05,
-        nist_aes128_key0,
-        nist_ctr_128_enc_expected0,
-        nist_plaintext0
-      );
+          singleBlockTest(
+            8'h05,
+            key0,
+            exp0,
+            PT0
+        );
 
-     singleBlockTest(
-        8'h06,
-        nist_aes128_key1,
-        nist_ctr_128_enc_expected1,
-        nist_plaintext1
-      );
+        singleBlockTest(
+          8'h06,
+          key1,
+          exp1,
+          PT1
+        );
 
-     singleBlockTest(
-        8'h07,
-        nist_aes128_key2,
-        nist_ctr_128_enc_expected2,
-        nist_plaintext2
-      );
+        singleBlockTest(
+          8'h07,
+          key2,
+          exp2,
+          PT2
+        );
 
-     singleBlockTest(
-        8'h08,
-        nist_aes128_key3,
-        nist_ctr_128_enc_expected3,
-        nist_plaintext3
-      );
-
+        singleBlockTest(
+          8'h08,
+          key3,
+          exp3,
+          PT3
+        );
+      end
+      else begin
+        singleBlockTest(
+          8'h1,
+          nistKey,
+          nistPT,
+          nistExp
+        );
+      end
 
       displayResults();
       $display("");
